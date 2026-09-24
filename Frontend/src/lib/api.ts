@@ -32,6 +32,14 @@ export const authLogin = (email: string, password: string) =>
 export const authRegister = (email: string, password: string, name: string) =>
   api.post('/api/auth/register', { email, password, name }).then((r) => r.data);
 
+export const authRegisterUser = (data: {
+  email: string;
+  password: string;
+  name: string;
+  role: string;
+  department?: string;
+}) => api.post('/api/auth/users', data).then((r) => r.data);
+
 export const authMe = () => api.get('/api/auth/me').then((r) => r.data);
 
 // ─── Tickets ──────────────────────────────────────────────────────────────────

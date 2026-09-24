@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GraduationCap, Shield, Users, Eye, EyeOff, LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { GraduationCap, Shield, Users, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { authLogin, authRegister } from '../lib/api';
+import { authLogin, authRegister, authRegisterUser } from '../lib/api';
 
 type RoleStep = 'select' | 'login' | 'register';
 
@@ -43,16 +43,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [department, setDepartment] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleRoleSelect = (role: 'STUDENT' | 'STAFF' | 'ADMIN') => {
-    setSelectedRole(role); setStep('login'); setError(''); setEmail(''); setPassword('');
+    setSelectedRole(role);
+    setStep('login');
+    setError('');
+    setEmail('');
+    setPassword('');
+    setName('');
+    setDepartment('');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true); setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
       const res = await authLogin(email, password);
       login(res.accessToken, res.user);
@@ -60,21 +69,44 @@ export default function LoginPage() {
       navigate(r === 'ADMIN' ? '/admin' : r === 'STAFF' ? '/staff' : '/student');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Invalid credentials. Please try again.');
-    } finally { setLoading(false); }
+      setError(e.response?.data?.message || 'Invalid credentials. Please check your email and password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true); setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
-      const res = await authRegister(email, password, name);
-      login(res.accessToken, res.user);
-      navigate('/student');
+      if (selectedRole === 'STUDENT') {
+        // Direct student registration endpoint
+        const res = await authRegister(email, password, name);
+        login(res.accessToken, res.user);
+        navigate('/student');
+      } else {
+        // Staff or Admin registration via /api/auth/users
+        await authRegisterUser({
+          email,
+          password,
+          name,
+          role: selectedRole,
+          department: department.trim() || undefined,
+        });
+
+        // Automatically sign in the registered staff/admin
+        const res = await authLogin(email, password);
+        login(res.accessToken, res.user);
+        navigate(selectedRole === 'ADMIN' ? '/admin' : '/staff');
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string | string[] } } };
       const msg = e.response?.data?.message;
-      setError(Array.isArray(msg) ? msg.join(', ') : msg || 'Registration failed.');
-    } finally { setLoading(false); }
+      setError(Array.isArray(msg) ? msg.join(', ') : msg || 'Registration failed. Please check the inputs.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const cfg = ROLE_CONFIG[selectedRole];
@@ -149,7 +181,7 @@ export default function LoginPage() {
                 className="flex items-center gap-1.5 bg-transparent border-0 text-[#9898b8] hover:text-[#f0f0fa] cursor-pointer text-[0.85rem] p-0 transition-colors duration-200"
                 onClick={() => { setStep('select'); setError(''); }}
               >
-                <ArrowLeft size={16} /> Back
+                <ArrowLeft size={16} /> Back to roles
               </button>
 
               {/* Role badge */}
@@ -160,26 +192,28 @@ export default function LoginPage() {
                 <Icon size={18} /> <span>{cfg.label}</span>
               </div>
 
-              {/* Login/Register tabs — only for STUDENT */}
-              {selectedRole === 'STUDENT' && (
-                <div
-                  className="flex rounded-xl p-1 gap-1"
-                  style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  {(['login', 'register'] as const).map((t) => (
-                    <button
-                      key={t}
-                      id={`tab-${t}`}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] border-0 cursor-pointer text-[0.85rem] font-medium transition-all duration-200 ${step === t ? 'text-[#f0f0fa] bg-white/[0.06] shadow-md' : 'bg-transparent text-[#9898b8] hover:text-[#f0f0fa]'}`}
-                      onClick={() => { setStep(t); setError(''); }}
-                    >
-                      {t === 'login' ? <><LogIn size={14} /> Sign In</> : <><UserPlus size={14} /> Register</>}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Login/Register tabs for all roles */}
+              <div
+                className="flex rounded-xl p-1 gap-1"
+                style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {(['login', 'register'] as const).map((t) => (
+                  <button
+                    key={t}
+                    id={`tab-${t}`}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] border-0 cursor-pointer text-[0.85rem] font-medium transition-all duration-200 ${
+                      step === t
+                        ? 'text-[#f0f0fa] bg-white/[0.08] shadow-md'
+                        : 'bg-transparent text-[#9898b8] hover:text-[#f0f0fa]'
+                    }`}
+                    onClick={() => { setStep(t); setError(''); }}
+                  >
+                    {t === 'login' ? <><LogIn size={14} /> Sign In</> : <><UserPlus size={14} /> Register</>}
+                  </button>
+                ))}
+              </div>
 
-              {/* Error */}
+              {/* Error alert */}
               {error && (
                 <div
                   className="rounded-xl p-3 text-[#fca5a5] text-[0.85rem]"
@@ -210,36 +244,55 @@ export default function LoginPage() {
                     className="flex items-center justify-center gap-2 py-3 rounded-xl border-0 text-white text-[0.95rem] font-semibold cursor-pointer w-full hover:brightness-110 hover:-translate-y-px transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{ background: cfg.gradient, boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}
                   >
-                    {loading ? <span className="w-[18px] h-[18px] rounded-full border-[3px] border-white/20 border-t-white anim-spin" /> : <><LogIn size={16} /> Sign In</>}
+                    {loading ? <span className="w-[18px] h-[18px] rounded-full border-[3px] border-white/20 border-t-white anim-spin" /> : <><LogIn size={16} /> Sign In as {cfg.label}</>}
                   </button>
                 </form>
               )}
 
-              {/* Register form */}
-              {step === 'register' && selectedRole === 'STUDENT' && (
+              {/* Register form (available for STUDENT, STAFF, and ADMIN) */}
+              {step === 'register' && (
                 <form className="flex flex-col gap-4" onSubmit={handleRegister} id="register-form">
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-name" className="text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">Full Name</label>
+                    <label htmlFor="reg-name" className="text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">Full Name *</label>
                     <input id="reg-name" type="text" placeholder="Your full name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={100} autoFocus className={INPUT} />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-email" className="text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">Email</label>
-                    <input id="reg-email" type="email" placeholder="student@college.edu" value={email} onChange={(e) => setEmail(e.target.value)} required className={INPUT} />
+                    <label htmlFor="reg-email" className="text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">Email *</label>
+                    <input id="reg-email" type="email" placeholder={cfg.placeholder} value={email} onChange={(e) => setEmail(e.target.value)} required className={INPUT} />
                   </div>
+
+                  {(selectedRole === 'STAFF' || selectedRole === 'ADMIN') && (
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="reg-department" className="flex items-center gap-1 text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">
+                        <Building2 size={13} /> Department <span className="text-[#5f5f7a] text-[0.75rem] font-normal lowercase">(optional)</span>
+                      </label>
+                      <input
+                        id="reg-department"
+                        type="text"
+                        placeholder="e.g. IT Support, Student Affairs, Finance"
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        maxLength={100}
+                        className={INPUT}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="reg-password" className="text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">Password</label>
+                    <label htmlFor="reg-password" className="text-[0.82rem] font-semibold text-[#9898b8] uppercase tracking-[0.06em]">Password *</label>
                     <div className="relative">
-                      <input id="reg-password" type={showPassword ? 'text' : 'password'} placeholder="At least 10 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} maxLength={128} className={INPUT + ' pr-[42px]'} />
+                      <input id="reg-password" type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={128} className={INPUT + ' pr-[42px]'} />
                       <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-0 text-[#5f5f7a] hover:text-[#f0f0fa] cursor-pointer flex items-center transition-colors duration-200" onClick={() => setShowPassword(p => !p)}>
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
+
                   <button id="register-submit" type="submit" disabled={loading}
                     className="flex items-center justify-center gap-2 py-3 rounded-xl border-0 text-white text-[0.95rem] font-semibold cursor-pointer w-full hover:brightness-110 hover:-translate-y-px transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{ background: cfg.gradient, boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}
                   >
-                    {loading ? <span className="w-[18px] h-[18px] rounded-full border-[3px] border-white/20 border-t-white anim-spin" /> : <><UserPlus size={16} /> Create Account</>}
+                    {loading ? <span className="w-[18px] h-[18px] rounded-full border-[3px] border-white/20 border-t-white anim-spin" /> : <><UserPlus size={16} /> Register as {cfg.label}</>}
                   </button>
                 </form>
               )}
