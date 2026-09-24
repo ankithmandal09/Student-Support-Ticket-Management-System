@@ -4,7 +4,13 @@ A support operations system for managing student support tickets, staff assignme
 
 The project provides role-based access for **ADMIN, STAFF, and STUDENT** users. Authentication is handled through bearer tokens, while ticket access and actions are restricted based on the user's role and ownership.
 
-All timestamps are handled in **UTC**, and SLA calculations use **calendar minutes** as defined by the requirements.
+Live Links
+
+Frontend: https://student-support-ticket-management-system-ufc9.onrender.com
+
+Backend API: https://student-support-ticket-management-system-5doc.onrender.com
+
+Swagger API Documentation: https://student-support-ticket-management-system-5doc.onrender.com/api-docs
 
 ---
 
