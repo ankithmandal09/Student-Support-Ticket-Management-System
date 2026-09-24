@@ -10,13 +10,7 @@ export function configureApp(app: INestApplication) {
       forbidUnknownValues: true,
     }),
   );
-  const origins = (
-    'http://localhost:5173'
-  )
-    .split(',')
-    .map((value) => value.trim().replace(/\/$/, ''))
-    .filter(Boolean);
-  app.enableCors({ origin: origins, credentials: false });
+  app.enableCors({ origin: '*', credentials: false });
 }
 export function createSwagger(app: INestApplication) {
   return SwaggerModule.createDocument(
