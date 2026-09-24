@@ -12,7 +12,7 @@ async function bootstrap() {
   });
   app.enableShutdownHooks();
   const port = Number(8500);
-  await app.listen(port, process.env.HOST ?? '127.0.0.1');
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap().catch((error) => {
   console.error(error instanceof Error ? error.message : 'Startup failed');
