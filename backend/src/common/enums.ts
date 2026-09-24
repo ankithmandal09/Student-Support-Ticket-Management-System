@@ -1,0 +1,47 @@
+export enum Role {
+  STUDENT = 'STUDENT',
+  STAFF = 'STAFF',
+  ADMIN = 'ADMIN',
+}
+export enum Category {
+  FEES = 'FEES',
+  ATTENDANCE = 'ATTENDANCE',
+  ID_CARD = 'ID_CARD',
+  DOCUMENTS = 'DOCUMENTS',
+  CERTIFICATES = 'CERTIFICATES',
+  OTHER = 'OTHER',
+}
+export enum Priority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+export enum Status {
+  NEW = 'NEW',
+  ASSIGNED = 'ASSIGNED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  PENDING_STUDENT = 'PENDING_STUDENT',
+  PENDING_INTERNAL = 'PENDING_INTERNAL',
+  RESOLVED = 'RESOLVED',
+  CLOSED = 'CLOSED',
+  REOPENED = 'REOPENED',
+  CANCELLED = 'CANCELLED',
+}
+export enum Source {
+  STUDENT_PORTAL = 'STUDENT_PORTAL',
+  STAFF_CREATED = 'STAFF_CREATED',
+}
+export enum SlaState {
+  ON_TRACK = 'ON_TRACK',
+  AT_RISK = 'AT_RISK',
+  BREACHED = 'BREACHED',
+  MET = 'MET',
+  PAUSED = 'PAUSED',
+  NOT_APPLICABLE = 'NOT_APPLICABLE',
+}
+export const terminalStatuses = [
+  Status.RESOLVED,
+  Status.CLOSED,
+  Status.CANCELLED,
+];
